@@ -30,7 +30,11 @@ use the editor.
 <!-- LOVABLE:END -->
 
 ## Nostra rules
-- Demo data and money/progress rules live in src/lib/demo-data.ts with tests in src/test/demo-data.test.ts; why: one source until real storage is added.
+- Money/progress/subscription rules and date helpers live in src/lib/rules.ts, tested in src/test/rules.test.ts; why: one tested source for business rules.
+- Data is read/written from the browser via the Cloud client with RLS (hooks in src/lib/data.ts); access to a student card = tutor_id, student_user_id or parent_user_id (can_access_student); why: simple, RLS enforces who sees what.
+- Account type (tutor/student/parent) lives in user_roles; students/parents link to a card with its invite code via claim_invite; parents mark payment via parent_mark_paid (pending → tutor confirms); why: no self-escalation, tutor stays in control of money.
+- Auth gate is in __root (Gate → AuthScreen); the header tabs depend on role; why: every page needs a signed-in user.
+- Parent meetings are lessons with kind='parent': free and excluded from progress; why: owner's 'separate hour with parent' feature.
 - Progress = percent of attended lessons among held or missed ones; debt counts only held unpaid lessons; why: product definition from the owner.
 - App is dark-themed by default (tokens in :root of src/styles.css), fonts Inter + Unbounded (logo); why: matches the owner's HTML mockup.
 - Shared top navigation lives in src/components/AppHeader.tsx rendered from __root; why: one header for every tutor page.

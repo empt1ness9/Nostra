@@ -11,6 +11,9 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import { AppHeader } from "../components/AppHeader";
+import { AuthScreen } from "../components/AuthScreen";
+import { AuthProvider, useAuth } from "../lib/auth";
+import { Toaster } from "../components/ui/sonner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -131,10 +134,24 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <div className="min-h-screen bg-background">
-        <AppHeader />
-        <Outlet />
-      </div>
+      <AuthProvider>
+        <div className="min-h-screen bg-background">
+          <Gate />
+        </div>
+        <Toaster />
+      </AuthProvider>
     </QueryClientProvider>
+  );
+}
+
+function Gate() {
+  const { loading, user } = useAuth();
+  if (loading) return <div className="grid min-h-screen place-items-center text-sm text-muted-foreground">Загрузка…</div>;
+  if (!user) return <AuthScreen />;
+  return (
+    <>
+      <AppHeader />
+      <Outlet />
+    </>
   );
 }

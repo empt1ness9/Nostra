@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { PayStatus } from "@/lib/demo-data";
+import type { PayStatus } from "@/lib/rules";
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <section className={`rounded-2xl border border-border bg-card p-6 ${className}`}>{children}</section>;
@@ -26,4 +26,12 @@ export function PageTitle({ children, right }: { children: ReactNode; right?: Re
       {right}
     </div>
   );
+}
+
+export const inputCls = "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-hidden focus:border-ring";
+export const btnPrimary = "rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50";
+export const btnGhost = "rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-secondary";
+
+export function Field({ label, children }: { label: string; children: ReactNode }) {
+  return <label className="grid gap-1 text-sm"><span className="text-muted-foreground">{label}</span>{children}</label>;
 }
