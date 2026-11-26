@@ -4,7 +4,8 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, PageTitle, btnGhost, btnPrimary, inputCls } from "@/components/ui-bits";
 import { pageHead } from "@/lib/head";
-import { priceMap, useLessons, useStudentMutations, useStudents, type Student } from "@/lib/data";
+import { priceMap, useLessons, useStudentMutations, useStudents, useTopicMutations, useTopics, type Student } from "@/lib/data";
+import { TopicsBlock } from "@/components/TopicsBlock";
 import { attendance, debt, rub } from "@/lib/rules";
 
 export const Route = createFileRoute("/students")({
@@ -17,22 +18,34 @@ const colors = ["blue", "green", "amber"];
 
 function StudentDialog({ student, count, onClose }: { student: Student | null; count: number; onClose: () => void }) {
   const m = useStudentMutations();
+  const tm = useTopicMutations();
+  const [startTopics, setStartTopics] = useState("");
   const [f, setF] = useState({
     name: student?.name ?? "", subject: student?.subject ?? "", price: student?.price ?? 1500,
-    phone: student?.phone ?? "", color: student?.color ?? colors[count % 3]!,
+    phone: student?.phone ?? "", parent_phone: student?.parent_phone ?? "", pay_scheme: student?.pay_scheme ?? "per_lesson", color: student?.color ?? colors[count % 3]!,
   });
   const done = { onSuccess: () => { toast.success("Сохранено"); onClose(); }, onError: (e: Error) => toast.error(e.message) };
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader><DialogTitle>{student ? "Ученик" : "Новый ученик"}</DialogTitle></DialogHeader>
-        <form className="grid gap-3" onSubmit={(e) => { e.preventDefault(); if (student) m.update.mutate({ id: student.id, ...f }, done); else m.add.mutate(f, done); }}>
+        <form className="grid gap-3" onSubmit={(e) => { e.preventDefault(); if (student) m.update.mutate({ id: student.id, ...f }, done); else m.add.mutate(f, { ...done, onSuccess: (id: string) => {
+            const list = startTopics.split(",").map((x) => x.trim()).filter(Boolean);
+            if (id && list.length) tm.add.mutate(list.map((title) => ({ student_id: id, title })));
+            done.onSuccess();
+          } }); }}>
           <Field label="Имя и фамилия"><input required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} className={inputCls} /></Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Предмет"><input value={f.subject} onChange={(e) => setF({ ...f, subject: e.target.value })} className={inputCls} /></Field>
             <Field label="Цена урока, ₽"><input type="number" min={0} value={f.price} onChange={(e) => setF({ ...f, price: Number(e.target.value) })} className={inputCls} /></Field>
           </div>
-          <Field label="Телефон"><input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} className={inputCls} /></Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Телефон ученика"><input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} className={inputCls} /></Field>
+            <Field label="Телефон родителя (для отчётов)"><input value={f.parent_phone} onChange={(e) => setF({ ...f, parent_phone: e.target.value })} className={inputCls} /></Field>
+          </div>
+          <Field label="Схема оплаты (пропуски не оплачиваются)"><select value={f.pay_scheme} onChange={(e) => setF({ ...f, pay_scheme: e.target.value })} className={inputCls}>
+            <option value="per_lesson">За каждое занятие</option><option value="monthly">В конце месяца</option></select></Field>
+          {!student && <Field label="Стартовые темы (через запятую)"><input value={startTopics} onChange={(e) => setStartTopics(e.target.value)} placeholder="Логарифмы, Тригонометрия" className={inputCls} /></Field>}
           <Field label="Цвет в расписании">
             <div className="flex gap-2">{colors.map((c) => <button type="button" key={c} onClick={() => setF({ ...f, color: c })} className={`size-7 rounded-full ${dot[c]} ${f.color === c ? "ring-2 ring-foreground ring-offset-2 ring-offset-background" : ""}`} aria-label={c} />)}</div>
           </Field>
@@ -49,6 +62,7 @@ function StudentDialog({ student, count, onClose }: { student: Student | null; c
 function Students() {
   const { data: students = [] } = useStudents();
   const { data: lessons = [] } = useLessons();
+  const { data: topics = [] } = useTopics();
   const price = priceMap(students);
   const [edit, setEdit] = useState<Student | null | "new">(null);
   return (
@@ -63,7 +77,7 @@ function Students() {
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="flex items-center gap-2 font-semibold"><span className={`size-2 shrink-0 rounded-full ${dot[s.color]}`} />{s.name}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{s.subject} · {rub(s.price)}/урок {s.phone && `· ${s.phone}`}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{s.subject} · {rub(s.price)}/урок {s.phone && `· ${s.phone}`} · {s.pay_scheme === "monthly" ? "оплата в конце месяца" : "оплата за занятие"}</p>
                 </div>
                 <button className="text-xs text-muted-foreground hover:text-foreground" onClick={() => setEdit(s)}>Изменить</button>
               </div>
@@ -73,6 +87,7 @@ function Students() {
               </div>
               <div className="mb-1 flex justify-between text-sm"><span className="text-muted-foreground">Прогресс (посещаемость)</span><span className="font-semibold">{a.percent}%</span></div>
               <div className="h-2 rounded-full bg-secondary"><div className="h-2 rounded-full bg-primary" style={{ width: `${a.percent}%` }} /></div>
+              <div className="mt-4"><TopicsBlock studentId={s.id} topics={topics.filter((t) => t.student_id === s.id)} editable /></div>
               <div className="mt-4 rounded-xl border border-dashed border-border p-3 text-xs">
                 <p className="text-muted-foreground">Код для ученика и родителя: <b className="font-mono text-sm text-foreground">{s.invite_code}</b></p>
                 <p className="mt-1 text-muted-foreground">Ученик: {s.student_user_id ? "подключён ✓" : "не подключён"} · Родитель: {s.parent_user_id ? "подключён ✓" : "не подключён"}</p>

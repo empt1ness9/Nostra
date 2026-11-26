@@ -56,7 +56,7 @@ function useInvalidate() {
 export function useStudentMutations() {
   const inv = useInvalidate();
   return {
-    add: useMutation({ mutationFn: async (s: TablesInsert<"students">) => fail((await supabase.from("students").insert(s)).error), onSuccess: inv }),
+    add: useMutation({ mutationFn: async (s: TablesInsert<"students">) => { const r = await supabase.from("students").insert(s).select("id").single(); fail(r.error); return r.data?.id ?? ""; }, onSuccess: inv }),
     update: useMutation({ mutationFn: async ({ id, ...s }: TablesUpdate<"students"> & { id: string }) => fail((await supabase.from("students").update(s).eq("id", id)).error), onSuccess: inv }),
     remove: useMutation({ mutationFn: async (id: string) => fail((await supabase.from("students").delete().eq("id", id)).error), onSuccess: inv }),
     claim: useMutation({ mutationFn: async (code: string) => fail((await supabase.rpc("claim_invite", { _code: code })).error), onSuccess: inv }),
@@ -87,3 +87,72 @@ export const priceMap = (students: Student[]) => {
   const m = new Map(students.map((s) => [s.id, s.price]));
   return (id: string) => m.get(id) ?? 0;
 };
+
+export type Topic = Tables<"topics">;
+export type TutorSettings = Tables<"tutor_settings">;
+
+export function useTopics() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["topics", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("topics").select("*").order("created_at");
+      fail(error);
+      return data ?? [];
+    },
+  });
+}
+
+export function useTopicMutations() {
+  const qc = useQueryClient();
+  const inv = () => qc.invalidateQueries({ queryKey: ["topics"] });
+  return {
+    add: useMutation({ mutationFn: async (rows: TablesInsert<"topics">[]) => fail((await supabase.from("topics").insert(rows)).error), onSuccess: inv }),
+    toggle: useMutation({ mutationFn: async ({ id, done }: { id: string; done: boolean }) => fail((await supabase.from("topics").update({ done }).eq("id", id)).error), onSuccess: inv }),
+    remove: useMutation({ mutationFn: async (id: string) => fail((await supabase.from("topics").delete().eq("id", id)).error), onSuccess: inv }),
+  };
+}
+
+/** Settings of a tutor: own (tutorId = me) or of the linked tutor. */
+export function useTutorSettings(tutorId: string | undefined) {
+  return useQuery({
+    queryKey: ["tutor_settings", tutorId],
+    enabled: !!tutorId,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("tutor_settings").select("*").eq("tutor_id", tutorId!).maybeSingle();
+      fail(error);
+      return data;
+    },
+  });
+}
+
+export function useSaveSettings() {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: async (s: TablesInsert<"tutor_settings">) => fail((await supabase.from("tutor_settings").upsert({ ...s, tutor_id: user!.id })).error),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["tutor_settings"] }),
+  });
+}
+
+export function useQrUrl(path: string | undefined) {
+  return useQuery({
+    queryKey: ["qr", path],
+    enabled: !!path,
+    staleTime: 30 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase.storage.from("qr").createSignedUrl(path!, 3600);
+      fail(error);
+      return data?.signedUrl ?? "";
+    },
+  });
+}
+
+export function useMarkHomework() {
+  const inv = useInvalidate();
+  return useMutation({
+    mutationFn: async ({ id, done }: { id: string; done: boolean }) => fail((await supabase.rpc("student_mark_homework", { _lesson: id, _done: done })).error),
+    onSuccess: inv,
+  });
+}

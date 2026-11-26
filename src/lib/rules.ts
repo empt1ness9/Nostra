@@ -61,3 +61,27 @@ export const fmtDay = (s: string) => parseIso(s).toLocaleDateString("ru-RU", { d
 
 /** Subscription: 290 ₽/month for up to 10 students, 500 ₽ for more. */
 export const subscriptionPrice = (studentCount: number) => (studentCount > 10 ? 500 : 290);
+
+export const topicProgress = (topics: { done: boolean }[]) =>
+  topics.length ? Math.round((topics.filter((t) => t.done).length / topics.length) * 100) : 0;
+
+export interface ReportLesson extends RuleLesson { date: string }
+/** Monthly report: held/missed/rescheduled lessons in a month and the sum still to pay. Missed lessons are not charged. */
+export function monthReport(list: ReportLesson[], studentId: string, month: string, price: number) {
+  const inMonth = list.filter((l) => l.student_id === studentId && l.kind !== "parent" && l.date.startsWith(month));
+  const held = inMonth.filter((l) => l.status === "done");
+  const unpaid = held.filter((l) => l.pay !== "paid");
+  return {
+    held: held.length,
+    missed: inMonth.filter((l) => l.status === "missed").length,
+    rescheduled: inMonth.filter((l) => l.status === "rescheduled").length,
+    total: held.length * price,
+    toPay: unpaid.length * price,
+  };
+}
+
+/** Lesson end from a start time plus duration in minutes (HH:MM). */
+export const plusMinutes = (t: string, add: number) => {
+  const m = Math.min(minutes(t) + add, 23 * 60 + 59);
+  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+};

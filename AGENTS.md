@@ -38,3 +38,5 @@ use the editor.
 - Progress = percent of attended lessons among held or missed ones; debt counts only held unpaid lessons; why: product definition from the owner.
 - App is dark-themed by default (tokens in :root of src/styles.css), fonts Inter + Unbounded (logo); why: matches the owner's HTML mockup.
 - Shared top navigation lives in src/components/AppHeader.tsx rendered from __root; why: one header for every tutor page.
+- Tutor payment details, defaults and QR live in tutor_settings (readable by linked student/parent); QR images in the private "qr" storage bucket under <tutor_id>/, shown via signed URLs; why: workspace blocks public buckets.
+- Topics per student in topics table; homework is a field on lessons, students mark it via student_mark_homework; why: mockup's "темы и ДЗ" features.

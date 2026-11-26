@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { pageHead } from "@/lib/head";
 import { useAuth } from "@/lib/auth";
-import { useLessons, useStudents, type Lesson } from "@/lib/data";
+import { useLessonMutations, useLessons, useStudents, type Lesson } from "@/lib/data";
+import { toast } from "sonner";
 import { addDays, minutes, mondayOf, parseIso, todayIso } from "@/lib/rules";
 import { LessonDialog } from "@/components/LessonDialog";
 import { btnGhost, btnPrimary } from "@/components/ui-bits";
@@ -28,6 +29,22 @@ function Schedule() {
   const { data: lessons = [] } = useLessons();
   const today = todayIso();
   const [week, setWeek] = useState(() => mondayOf(today));
+  const { add } = useLessonMutations();
+  const weekLessons = lessons.filter((l) => l.date >= week && l.date <= addDays(week, 6) && l.status !== "rescheduled");
+  function copyWeek() {
+    if (!weekLessons.length) { toast("На этой неделе нет занятий"); return; }
+    add.mutate(weekLessons.map((l) => ({ student_id: l.student_id, date: addDays(l.date, 7), start_time: l.start_time, end_time: l.end_time, title: l.title, kind: l.kind })),
+      { onSuccess: () => { toast.success("Занятия скопированы на следующую неделю"); setWeek(addDays(week, 7)); } });
+  }
+  function exportIcs() {
+    const stamp = (d: string, t: string) => `${d.replace(/-/g, "")}T${t.replace(":", "")}00`;
+    const ev = lessons.filter((l) => l.status !== "rescheduled").map((l) => {
+      const st = students.find((s) => s.id === l.student_id);
+      return ["BEGIN:VEVENT", `UID:${l.id}@nostra`, `DTSTART:${stamp(l.date, l.start_time)}`, `DTEND:${stamp(l.date, l.end_time)}`, `SUMMARY:${st?.name ?? ""} — ${l.kind === "parent" ? "встреча с родителем" : l.title}`, "END:VEVENT"].join("\r\n");
+    });
+    const blob = new Blob([["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Nostra//RU", ...ev, "END:VCALENDAR"].join("\r\n")], { type: "text/calendar" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "nostra.ics"; a.click();
+  }
   const [dlg, setDlg] = useState<{ lesson: Lesson | null; date: string } | null>(null);
   const days = Array.from({ length: 7 }, (_, i) => addDays(week, i));
   const hours = Array.from({ length: END - START }, (_, i) => START + i);
@@ -46,6 +63,8 @@ function Schedule() {
           <div className="flex gap-3 text-xs text-muted-foreground">
             <span className="text-success">● Оплачено</span><span className="text-warning">● На проверке</span><span className="text-destructive">● Не оплачено</span>
           </div>
+          <button className={btnGhost} onClick={exportIcs} title="Скачать файл для Google Календаря">↓ В Календарь</button>
+          {isTutor && <button className={btnGhost} onClick={copyWeek}>⧉ На след. неделю</button>}
           {isTutor && <button className={btnPrimary} onClick={() => setDlg({ lesson: null, date: today })}>+ Занятие</button>}
         </div>
       </div>

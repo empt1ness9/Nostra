@@ -19,6 +19,8 @@ export type Database = {
           created_at: string
           date: string
           end_time: string
+          homework: string
+          homework_done: boolean
           id: string
           kind: string
           pay: string
@@ -32,6 +34,8 @@ export type Database = {
           created_at?: string
           date: string
           end_time: string
+          homework?: string
+          homework_done?: boolean
           id?: string
           kind?: string
           pay?: string
@@ -45,6 +49,8 @@ export type Database = {
           created_at?: string
           date?: string
           end_time?: string
+          homework?: string
+          homework_done?: boolean
           id?: string
           kind?: string
           pay?: string
@@ -124,7 +130,9 @@ export type Database = {
           id: string
           invite_code: string
           name: string
+          parent_phone: string
           parent_user_id: string | null
+          pay_scheme: string
           phone: string
           price: number
           student_user_id: string | null
@@ -139,7 +147,9 @@ export type Database = {
           id?: string
           invite_code?: string
           name: string
+          parent_phone?: string
           parent_user_id?: string | null
+          pay_scheme?: string
           phone?: string
           price?: number
           student_user_id?: string | null
@@ -154,7 +164,9 @@ export type Database = {
           id?: string
           invite_code?: string
           name?: string
+          parent_phone?: string
           parent_user_id?: string | null
+          pay_scheme?: string
           phone?: string
           price?: number
           student_user_id?: string | null
@@ -162,6 +174,80 @@ export type Database = {
           topics_done?: number
           topics_total?: number
           tutor_id?: string
+        }
+        Relationships: []
+      }
+      topics: {
+        Row: {
+          created_at: string
+          done: boolean
+          id: string
+          student_id: string
+          title: string
+          tutor_id: string
+        }
+        Insert: {
+          created_at?: string
+          done?: boolean
+          id?: string
+          student_id: string
+          title: string
+          tutor_id?: string
+        }
+        Update: {
+          created_at?: string
+          done?: boolean
+          id?: string
+          student_id?: string
+          title?: string
+          tutor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topics_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tutor_settings: {
+        Row: {
+          bank: string
+          cancel_hours: number
+          card: string
+          default_minutes: number
+          pay_comment: string
+          pay_phone: string
+          qr_path: string
+          telegram: string
+          tutor_id: string
+          updated_at: string
+        }
+        Insert: {
+          bank?: string
+          cancel_hours?: number
+          card?: string
+          default_minutes?: number
+          pay_comment?: string
+          pay_phone?: string
+          qr_path?: string
+          telegram?: string
+          tutor_id?: string
+          updated_at?: string
+        }
+        Update: {
+          bank?: string
+          cancel_hours?: number
+          card?: string
+          default_minutes?: number
+          pay_comment?: string
+          pay_phone?: string
+          qr_path?: string
+          telegram?: string
+          tutor_id?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -199,6 +285,10 @@ export type Database = {
       }
       parent_mark_paid: { Args: { _lesson: string }; Returns: undefined }
       set_my_account_type: { Args: { _type: string }; Returns: undefined }
+      student_mark_homework: {
+        Args: { _done: boolean; _lesson: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "tutor" | "student" | "parent"

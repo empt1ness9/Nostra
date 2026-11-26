@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as FinancesRouteImport } from './routes/finances'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ScheduleRouteImport } from './routes/schedule'
 import { Route as StudentsRouteImport } from './routes/students'
 import { Route as SubscriptionRouteImport } from './routes/subscription'
@@ -29,6 +30,11 @@ const ChatRoute = ChatRouteImport.update({
 const FinancesRoute = FinancesRouteImport.update({
   id: '/finances',
   path: '/finances',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ScheduleRoute = ScheduleRouteImport.update({
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/chat': typeof ChatRoute
   '/finances': typeof FinancesRoute
+  '/profile': typeof ProfileRoute
   '/schedule': typeof ScheduleRoute
   '/students': typeof StudentsRoute
   '/subscription': typeof SubscriptionRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/chat': typeof ChatRoute
   '/finances': typeof FinancesRoute
+  '/profile': typeof ProfileRoute
   '/schedule': typeof ScheduleRoute
   '/students': typeof StudentsRoute
   '/subscription': typeof SubscriptionRoute
@@ -68,6 +76,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/chat': typeof ChatRoute
   '/finances': typeof FinancesRoute
+  '/profile': typeof ProfileRoute
   '/schedule': typeof ScheduleRoute
   '/students': typeof StudentsRoute
   '/subscription': typeof SubscriptionRoute
@@ -75,14 +84,28 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/chat' | '/finances' | '/schedule' | '/students' | '/subscription'
+    | '/'
+    | '/chat'
+    | '/finances'
+    | '/profile'
+    | '/schedule'
+    | '/students'
+    | '/subscription'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/chat' | '/finances' | '/schedule' | '/students' | '/subscription'
+  to:
+    | '/'
+    | '/chat'
+    | '/finances'
+    | '/profile'
+    | '/schedule'
+    | '/students'
+    | '/subscription'
   id:
     | '__root__'
     | '/'
     | '/chat'
     | '/finances'
+    | '/profile'
     | '/schedule'
     | '/students'
     | '/subscription'
@@ -92,6 +115,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ChatRoute: typeof ChatRoute
   FinancesRoute: typeof FinancesRoute
+  ProfileRoute: typeof ProfileRoute
   ScheduleRoute: typeof ScheduleRoute
   StudentsRoute: typeof StudentsRoute
   SubscriptionRoute: typeof SubscriptionRoute
@@ -118,6 +142,13 @@ declare module '@tanstack/react-router' {
       path: '/finances'
       fullPath: '/finances'
       preLoaderRoute: typeof FinancesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/schedule': {
@@ -148,6 +179,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ChatRoute: ChatRoute,
   FinancesRoute: FinancesRoute,
+  ProfileRoute: ProfileRoute,
   ScheduleRoute: ScheduleRoute,
   StudentsRoute: StudentsRoute,
   SubscriptionRoute: SubscriptionRoute,

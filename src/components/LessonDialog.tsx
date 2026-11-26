@@ -2,22 +2,27 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, btnGhost, btnPrimary, inputCls } from "@/components/ui-bits";
-import { useLessonMutations, type Lesson, type Student } from "@/lib/data";
-import { addDays } from "@/lib/rules";
+import { useLessonMutations, useTutorSettings, type Lesson, type Student } from "@/lib/data";
+import { useAuth } from "@/lib/auth";
+import { addDays, plusMinutes } from "@/lib/rules";
 
 export function LessonDialog({ open, onClose, students, lesson, date }: {
   open: boolean; onClose: () => void; students: Student[]; lesson: Lesson | null; date: string;
 }) {
   const m = useLessonMutations();
+  const { user } = useAuth();
+  const { data: settings } = useTutorSettings(user?.id);
+  const dur = settings?.default_minutes ?? 60;
   const [f, setF] = useState({
     student_id: lesson?.student_id ?? students[0]?.id ?? "",
     date: lesson?.date ?? date,
     start_time: lesson?.start_time ?? "16:00",
-    end_time: lesson?.end_time ?? "17:00",
+    end_time: lesson?.end_time ?? plusMinutes("16:00", dur),
     title: lesson?.title ?? "",
     kind: lesson?.kind ?? "lesson",
     status: lesson?.status ?? "planned",
     pay: lesson?.pay ?? "unpaid",
+    homework: lesson?.homework ?? "",
     repeat: 1,
   });
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -48,6 +53,10 @@ export function LessonDialog({ open, onClose, students, lesson, date }: {
               <Field label="Начало"><input type="time" required value={f.start_time} onChange={set("start_time")} className={inputCls} /></Field>
               <Field label="Конец"><input type="time" required value={f.end_time} onChange={set("end_time")} className={inputCls} /></Field>
             </div>
+            <div className="flex gap-2 text-xs">
+              {[45, 60, 90].map((n) => <button type="button" key={n} className="rounded-md border border-border px-2 py-1 hover:bg-secondary" onClick={() => setF({ ...f, end_time: plusMinutes(f.start_time, n) })}>{n} мин</button>)}
+            </div>
+            <Field label="Домашнее задание"><textarea value={f.homework} onChange={(e) => setF({ ...f, homework: e.target.value })} rows={2} className={inputCls} /></Field>
             {lesson ? (
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Статус"><select value={f.status} onChange={set("status")} className={inputCls}>

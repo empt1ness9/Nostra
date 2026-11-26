@@ -36,11 +36,13 @@ export function AppHeader() {
           </div>
         </nav>
         <div className="flex items-center gap-3">
+          <Link to={role === "tutor" ? "/profile" : "/"} className="flex items-center gap-3" title="Личный кабинет">
           <span className="grid size-8 place-items-center rounded-full bg-accent text-xs font-semibold text-accent-foreground">{initials}</span>
           <div className="hidden leading-tight md:block">
             <p className="text-sm font-medium">{name}</p>
             <p className="text-[11px] text-muted-foreground">{role ? roleLabel[role] : ""}</p>
           </div>
+          </Link>
           <button onClick={signOut} className="text-xs text-muted-foreground hover:text-foreground">Выйти</button>
         </div>
       </div>

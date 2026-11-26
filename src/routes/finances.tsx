@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { toast } from "sonner";
+import { MonthReport } from "@/components/MonthReport";
 import { Card, PageTitle, PayBadge } from "@/components/ui-bits";
 import { pageHead } from "@/lib/head";
 import { priceMap, useLessonMutations, useLessons, useStudents } from "@/lib/data";
-import { debt, fmtDay, paidIncome, pendingSum, plannedIncome, rub, type PayStatus } from "@/lib/rules";
+import { addDays, debt, fmtDay, todayIso, paidIncome, pendingSum, plannedIncome, rub, type PayStatus } from "@/lib/rules";
 
 export const Route = createFileRoute("/finances")({
   head: pageHead("Финансы", "Доходы, долги и оплаты репетитора."),
@@ -12,7 +14,12 @@ export const Route = createFileRoute("/finances")({
 
 function Finances() {
   const { data: students = [] } = useStudents();
-  const { data: lessons = [] } = useLessons();
+  const { data: allLessons = [] } = useLessons();
+  const [period, setPeriod] = useState<"week" | "month" | "year" | "all">("month");
+  const [who, setWho] = useState("");
+  const today = todayIso();
+  const from = period === "week" ? addDays(today, -6) : period === "month" ? today.slice(0, 7) + "-01" : period === "year" ? today.slice(0, 4) + "-01-01" : "0000";
+  const lessons = allLessons.filter((l) => (!who || l.student_id === who) && (period === "all" || l.date >= from || l.status === "planned"));
   const { update } = useLessonMutations();
   const price = priceMap(students);
   const nameOf = (id: string) => students.find((s) => s.id === id)?.name ?? "";
@@ -25,7 +32,15 @@ function Finances() {
   ];
   return (
     <main className="mx-auto max-w-[1440px] px-6 py-8">
-      <PageTitle>Финансы</PageTitle>
+      <PageTitle right={
+        <div className="flex gap-2">
+          <select value={who} onChange={(e) => setWho(e.target.value)} className="rounded-lg border border-input bg-card px-3 py-1.5 text-sm"><option value="">Все ученики</option>{students.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
+          <div className="flex gap-1 rounded-xl border border-border bg-card p-1">
+            {([["week", "Неделя"], ["month", "Месяц"], ["year", "Год"], ["all", "Всё время"]] as const).map(([k, v]) => (
+              <button key={k} onClick={() => setPeriod(k)} className={`rounded-lg px-3 py-1 text-sm ${period === k ? "bg-background text-primary" : "text-muted-foreground"}`}>{v}</button>
+            ))}
+          </div>
+        </div>}>Финансы и отчёты</PageTitle>
       <div className="grid gap-5 md:grid-cols-4">
         {stats.map(([k, v]) => <Card key={k}><p className="text-sm text-muted-foreground">{k}</p><p className="mt-2 text-3xl font-bold">{v}</p></Card>)}
       </div>
@@ -45,6 +60,7 @@ function Finances() {
           </div>
         ))}
       </Card>
+      <MonthReport students={students} lessons={allLessons} />
     </main>
   );
 }
