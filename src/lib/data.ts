@@ -55,8 +55,15 @@ function useInvalidate() {
 
 export function useStudentMutations() {
   const inv = useInvalidate();
+  const { user, role } = useAuth();
   return {
-    add: useMutation({ mutationFn: async (s: TablesInsert<"students">) => { const r = await supabase.from("students").insert(s).select("id").single(); fail(r.error); return r.data?.id ?? ""; }, onSuccess: inv }),
+    add: useMutation({ mutationFn: async (s: TablesInsert<"students">) => {
+      if (!user) throw new Error("Войдите в аккаунт, чтобы добавить ученика.");
+      if (role !== "tutor") throw new Error("Добавлять учеников может только репетитор.");
+      const r = await supabase.from("students").insert({ ...s, tutor_id: user.id }).select("id").single();
+      fail(r.error);
+      return r.data?.id ?? "";
+    }, onSuccess: inv }),
     update: useMutation({ mutationFn: async ({ id, ...s }: TablesUpdate<"students"> & { id: string }) => fail((await supabase.from("students").update(s).eq("id", id)).error), onSuccess: inv }),
     remove: useMutation({ mutationFn: async (id: string) => fail((await supabase.from("students").delete().eq("id", id)).error), onSuccess: inv }),
     claim: useMutation({ mutationFn: async (code: string) => fail((await supabase.rpc("claim_invite", { _code: code })).error), onSuccess: inv }),
@@ -106,9 +113,15 @@ export function useTopics() {
 
 export function useTopicMutations() {
   const qc = useQueryClient();
+  const { user, role } = useAuth();
   const inv = () => qc.invalidateQueries({ queryKey: ["topics"] });
   return {
-    add: useMutation({ mutationFn: async (rows: TablesInsert<"topics">[]) => fail((await supabase.from("topics").insert(rows)).error), onSuccess: inv }),
+    add: useMutation({ mutationFn: async (rows: TablesInsert<"topics">[]) => {
+      if (!user) throw new Error("Войдите в аккаунт, чтобы добавить темы.");
+      if (role !== "tutor") throw new Error("Добавлять темы может только репетитор.");
+      const { error } = await supabase.from("topics").insert(rows.map((row) => ({ ...row, tutor_id: user.id })));
+      fail(error);
+    }, onSuccess: inv }),
     toggle: useMutation({ mutationFn: async ({ id, done }: { id: string; done: boolean }) => fail((await supabase.from("topics").update({ done }).eq("id", id)).error), onSuccess: inv }),
     remove: useMutation({ mutationFn: async (id: string) => fail((await supabase.from("topics").delete().eq("id", id)).error), onSuccess: inv }),
   };
