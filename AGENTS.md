@@ -28,3 +28,9 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Nostra rules
+- Demo data and money/progress rules live in src/lib/demo-data.ts with tests in src/test/demo-data.test.ts; why: one source until real storage is added.
+- Progress = percent of attended lessons among held or missed ones; debt counts only held unpaid lessons; why: product definition from the owner.
+- App is dark-themed by default (tokens in :root of src/styles.css), fonts Inter + Unbounded (logo); why: matches the owner's HTML mockup.
+- Shared top navigation lives in src/components/AppHeader.tsx rendered from __root; why: one header for every tutor page.
