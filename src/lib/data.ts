@@ -119,7 +119,8 @@ export function useTopicMutations() {
     add: useMutation({ mutationFn: async (rows: TablesInsert<"topics">[]) => {
       if (!user) throw new Error("Войдите в аккаунт, чтобы добавить темы.");
       if (role !== "tutor") throw new Error("Добавлять темы может только репетитор.");
-      fail((await supabase.from("topics").insert(rows.map((row) => ({ ...row, tutor_id: user.id }))).error);
+      const { error } = await supabase.from("topics").insert(rows.map((row) => ({ ...row, tutor_id: user.id })));
+      fail(error);
     }, onSuccess: inv }),
     toggle: useMutation({ mutationFn: async ({ id, done }: { id: string; done: boolean }) => fail((await supabase.from("topics").update({ done }).eq("id", id)).error), onSuccess: inv }),
     remove: useMutation({ mutationFn: async (id: string) => fail((await supabase.from("topics").delete().eq("id", id)).error), onSuccess: inv }),
