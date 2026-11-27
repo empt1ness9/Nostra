@@ -18,13 +18,17 @@ async function loadRole(user: User): Promise<{ role: Role; name: string }> {
   const pending = localStorage.getItem(PENDING_TYPE_KEY);
   const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
   let role = (roles?.[0]?.role ?? "tutor") as Role;
-  if (pending && pending !== role) {
-    const { error } = await supabase.rpc("set_my_account_type", { _type: pending });
-    if (!error) role = pending as Role;
+  try {
+    if (pending && pending !== role) {
+      const { error } = await supabase.rpc("set_my_account_type", { _type: pending });
+      if (!error) role = pending as Role;
+    }
+    localStorage.removeItem(PENDING_TYPE_KEY);
+  } catch {
+    // A failed role lookup must never leave the app stuck on the loading screen.
   }
-  localStorage.removeItem(PENDING_TYPE_KEY);
   const { data: prof } = await supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
-  const meta = user.user_metadata as Record<string, string | undefined>;
+  const meta = (user.user_metadata ?? {}) as Record<string, string | undefined>;
   return { role, name: prof?.full_name || meta["full_name"] || meta["name"] || user.email || "" };
 }
 
